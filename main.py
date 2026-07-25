@@ -40,3 +40,9 @@ def crear_tarea(tarea : Tarea ):
 @app.get("/tareas")
 def listar_tareas():
     return tareas
+
+
+@app.delete("/tareas/{indice}")
+def borrar_tareas(indice: int):
+    tareas.pop(indice)          
+    return {"mensaje": "tarea borrada"}   
