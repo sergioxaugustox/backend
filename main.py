@@ -45,4 +45,4 @@ def listar_tareas():
 @app.delete("/tareas/{indice}")
 def borrar_tareas(indice: int):
     tareas.pop(indice)          
-    return {"mensaje": "tarea borrada"}   
+    return {"mensaje": "tarea borrada"}    
