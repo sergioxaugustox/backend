@@ -1,6 +1,7 @@
 
 from pydantic import BaseModel
 from fastapi import FastAPI
+from database import engine, Base
 
 app = FastAPI()
 
@@ -46,3 +47,6 @@ def listar_tareas():
 def borrar_tareas(indice: int):
     tareas.pop(indice)          
     return {"mensaje": "tarea borrada"}    
+
+
+Base.metadata.create_all(bind=engine)
