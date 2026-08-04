@@ -2,7 +2,22 @@
 from pydantic import BaseModel
 from fastapi import FastAPI
 from database import engine, Base
+from database import SessionLocal
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from database import Tarea as TareaDB
 
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+            
 app = FastAPI()
 
 class Tarea(BaseModel):
@@ -10,10 +25,10 @@ class Tarea(BaseModel):
     descripcion: str
     hecho: bool
 
-tareas = []
 
 
-app = FastAPI()
+
+
 @app.get("/")
 def read_root():
     return{"mensaje": "hola"}
@@ -34,8 +49,11 @@ def funcion(user_id, categoria):
 
 
 @app.post ("/tareas" , status_code=201)
-def crear_tarea(tarea : Tarea ):
-    tareas .append( tarea)
+def crear_tarea(tarea : Tarea, db: Session = Depends (get_db) ):
+    nueva = TareaDB(titulo = tarea.titulo, descripcion = tarea.descripcion, hecho = tarea.hecho)
+    db.add(nueva)
+    db.commit()
+    db.refresh(nueva)
     return tarea 
 
 @app.get("/tareas")
