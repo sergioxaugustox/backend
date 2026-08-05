@@ -57,8 +57,8 @@ def crear_tarea(tarea : Tarea, db: Session = Depends (get_db) ):
     return tarea 
 
 @app.get("/tareas")
-def listar_tareas():
-    return tareas
+def listar_tareas(db: Session = Depends(get_db)):
+    return db.query(TareaDB).all()
 
 
 @app.delete("/tareas/{indice}")
