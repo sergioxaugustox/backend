@@ -24,6 +24,15 @@ class Tarea(BaseModel):
     descripcion: str
     hecho: bool
 
+class TareaRespuesta(BaseModel):
+    id: int
+    titulo: str
+    descripcion: str
+    hecho: bool
+
+    class Config:
+        from_attributes = True    
+
 
 
 
@@ -47,15 +56,15 @@ def funcion(user_id, categoria):
     return{"usuario": user_id,  "categoria": categoria }
 
 
-@app.post ("/tareas" , status_code=201)
+@app.post("/tareas", status_code=201, response_model=TareaRespuesta)
 def crear_tarea(tarea : Tarea, db: Session = Depends (get_db) ):
     nueva = TareaDB(titulo = tarea.titulo, descripcion = tarea.descripcion, hecho = tarea.hecho)
     db.add(nueva)
     db.commit()
     db.refresh(nueva)
-    return tarea 
+    return nueva 
 
-@app.get("/tareas")
+@app.get("/tareas", response_model=list[TareaRespuesta])
 def listar_tareas(db: Session = Depends(get_db)):
     return db.query(TareaDB).all()
 
@@ -69,7 +78,7 @@ def borrar_tareas(id: int, db: Session = Depends (get_db)):
     db.commit()
     return {"mensaje": "tarea borrada"}    
 
-@app.put("/tareas/{id}")
+@app.put("/tareas/{id}, response_model=TareaRespuesta")
 def actualizar_tarea(id: int, tarea_nueva: Tarea, db: Session = Depends(get_db)):
     tarea = db.query(TareaDB).filter(TareaDB.id == id) .first()
     if tarea is None:
