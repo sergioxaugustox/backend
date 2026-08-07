@@ -1,9 +1,8 @@
 
 from pydantic import BaseModel
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from database import engine, Base
 from database import SessionLocal
-from fastapi import Depends
 from sqlalchemy.orm import Session
 from database import Tarea as TareaDB
 
@@ -61,10 +60,27 @@ def listar_tareas(db: Session = Depends(get_db)):
     return db.query(TareaDB).all()
 
 
-@app.delete("/tareas/{indice}")
-def borrar_tareas(indice: int):
-    tareas.pop(indice)          
+@app.delete("/tareas/{id}")
+def borrar_tareas(id: int, db: Session = Depends (get_db)):
+    tarea = db.query(TareaDB).filter(TareaDB.id == id).first()
+    if tarea is None:
+        raise HTTPException(status_code=404, detail = "Tarea no encontrada")
+    db.delete(tarea)
+    db.commit()
     return {"mensaje": "tarea borrada"}    
+
+@app.put("/tareas/{id}")
+def actualizar_tarea(id: int, tarea_nueva: Tarea, db: Session = Depends(get_db)):
+    tarea = db.query(TareaDB).filter(TareaDB.id == id) .first()
+    if tarea is None:
+        raise HTTPException(status_code=404, detail = "tarea no encontrada")
+    tarea.titulo = tarea_nueva.titulo
+    tarea.descripcion = tarea_nueva.descripcion
+    tarea.hecho = tarea_nueva.hecho
+    db.commit()
+    db.refresh(tarea)
+    return tarea
+
 
 
 Base.metadata.create_all(bind=engine)
