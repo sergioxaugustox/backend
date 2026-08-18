@@ -1,10 +1,8 @@
 
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException
-from database import engine, Base
-from database import SessionLocal
 from sqlalchemy.orm import Session
-from database import Tarea as TareaDB
+from database import engine, Base, SessionLocal, Tarea as TareaDB, Insumo as InsumoDB
 
 
 
@@ -34,8 +32,21 @@ class TareaRespuesta(BaseModel):
         from_attributes = True    
 
 
+class Insumo(BaseModel):
+    nombre: str
+    unidad: str
+    tipo: str
 
+class InsumoRespuesta(BaseModel):
+    id: int
+    nombre: str
+    unidad: str
+    tipo: str
 
+    class Config:
+        from_attributes = True
+
+ 
 
 @app.get("/")
 def read_root():
@@ -79,4 +90,17 @@ def actualizar_tarea(id: int, tarea_nueva: Tarea, db: Session = Depends(get_db))
 
 
 
-Base.metadata.create_all(bind=engine)
+
+
+@app.post("/insumos", status_code=201, response_model=InsumoRespuesta)
+def nuevo_insumo(insumo: Insumo, db: Session = Depends(get_db)):
+    nueva = InsumoDB(nombre=insumo.nombre, unidad=insumo.unidad, tipo=insumo.tipo)
+    db.add(nueva)
+    db.commit()
+    db.refresh(nueva)
+    return nueva
+
+@app.get("/insumos", response_model = list[InsumoRespuesta])
+def listar_insumos(db:Session = Depends (get_db)):
+    return db.query (InsumoDB).all()
+
