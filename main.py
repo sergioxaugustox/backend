@@ -68,7 +68,7 @@ def listar_tareas(db: Session = Depends(get_db)):
 
 
 @app.delete("/tareas/{id}")
-def borrar_tareas(id: int, db: Session = Depends (get_db)):
+def borrar_tarea(id: int, db: Session = Depends (get_db)):
     tarea = db.query(TareaDB).filter(TareaDB.id == id).first()
     if tarea is None:
         raise HTTPException(status_code=404, detail = "Tarea no encontrada")
@@ -103,4 +103,30 @@ def nuevo_insumo(insumo: Insumo, db: Session = Depends(get_db)):
 @app.get("/insumos", response_model = list[InsumoRespuesta])
 def listar_insumos(db:Session = Depends (get_db)):
     return db.query (InsumoDB).all()
+
+@app.delete("/insumos/{id}")
+def borrar_insumo(id: int, db: Session = Depends (get_db)):
+    insumo= db.query(InsumoDB).filter(InsumoDB.id == id).first()
+    if insumo is None:
+        raise HTTPException (status_code=404, detail= "Insumo no encontrado")   
+    db.delete(insumo)
+    db.commit()
+    return{"mensaje": "Insumo borrado"}
+
+
+
+
+
+@app.put("/insumos/{id}", response_model=InsumoRespuesta)
+def actualizar_insumo(id: int, insumo_nuevo:Insumo, db: Session = Depends (get_db)):
+    insumo=db.query(InsumoDB).filter(InsumoDB.id == id).first()
+    if insumo is None:
+        raise HTTPException (status_code=404, detail= "Insumo no encontrado")  
+    insumo.nombre = insumo_nuevo.nombre
+    insumo.unidad = insumo_nuevo.unidad
+    insumo.tipo = insumo_nuevo.tipo
+    db.commit()
+    db.refresh(insumo)
+    return insumo
+
 
