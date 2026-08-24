@@ -2,7 +2,7 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Float, Date
 
 load_dotenv()
 
@@ -42,5 +42,14 @@ class Composicion(Base):
     concepto_id = Column(Integer, ForeignKey("conceptos.id"), nullable=False)
     insumo_id = Column(Integer, ForeignKey("insumos.id"), nullable=False)
     cantidad = Column(Float, nullable=False)
+
+class Precio(Base):
+    __tablename__ ="precios"
+    id = Column(Integer, primary_key=True, index=True)
+    insumo_id = Column(Integer, ForeignKey("insumos.id"), nullable=False)
+    precio = Column(Float, nullable=False)
+    fecha_vigencia = Column(Date,nullable=False)
+
+
 
 Base.metadata.create_all(bind=engine)

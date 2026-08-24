@@ -2,7 +2,8 @@
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import engine, Base, SessionLocal, Tarea as TareaDB, Insumo as InsumoDB
+from database import engine, Base, SessionLocal, Tarea as TareaDB, Insumo as InsumoDB, Precio as PrecioDB
+from datetime import date 
 
 
 
@@ -46,7 +47,22 @@ class InsumoRespuesta(BaseModel):
     class Config:
         from_attributes = True
 
- 
+class Precio(BaseModel):
+    insumo_id: int
+    precio: float
+    fecha_vigencia: date
+
+class PrecioRespuesta(BaseModel):
+    id: int
+    insumo_id: int
+    precio: float
+    fecha_vigencia: date
+
+    class Config:
+        from_attributes = True
+
+
+
 
 @app.get("/")
 def read_root():
@@ -115,8 +131,6 @@ def borrar_insumo(id: int, db: Session = Depends (get_db)):
 
 
 
-
-
 @app.put("/insumos/{id}", response_model=InsumoRespuesta)
 def actualizar_insumo(id: int, insumo_nuevo:Insumo, db: Session = Depends (get_db)):
     insumo=db.query(InsumoDB).filter(InsumoDB.id == id).first()
@@ -129,4 +143,14 @@ def actualizar_insumo(id: int, insumo_nuevo:Insumo, db: Session = Depends (get_d
     db.refresh(insumo)
     return insumo
 
+@app.post("/precios", status_code=201, response_model=PrecioRespuesta)
+def nuevo_precio(precio: Precio, db: Session = Depends(get_db)):
+    nueva= PrecioDB(insumo_id= precio.insumo_id, precio= precio.precio, fecha_vigencia= precio.fecha_vigencia)
+    db.add(nueva)
+    db.commit()
+    db.refresh(nueva)
+    return nueva
 
+@app.get("/precios", response_model=list[PrecioRespuesta])
+def listar_precios(db: Session = Depends(get_db)):
+    return db.query(PrecioDB).all()
