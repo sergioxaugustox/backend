@@ -225,3 +225,14 @@ def nuevo_composicion(composicion: Composicion, db: Session = Depends(get_db)):
 @app.get("/composicion", response_model=list[ComposicionRespuesta])
 def listar_composicion(db: Session = Depends(get_db)):
     return db.query(ComposicionDB).all()
+
+
+@app.get("/conceptos/{id}/costo")
+def calcular_costo(id: int, fecha: date, db: Session = Depends(get_db)):
+    composicion = db.query(ComposicionDB).filter(ComposicionDB.concepto_id == id).all()
+    costo_total = 0
+    for fila in composicion:
+        precio = db.query(PrecioDB).filter(PrecioDB.insumo_id == fila.insumo_id, PrecioDB.fecha_vigencia <= fecha).order_by(PrecioDB.fecha_vigencia.desc()).first()
+        costo_total = costo_total + (fila.cantidad * precio.precio)
+    return {"concepto_id": id, "fecha": fecha, "costo_total": costo_total}
+
