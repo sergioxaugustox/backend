@@ -233,6 +233,8 @@ def calcular_costo(id: int, fecha: date, db: Session = Depends(get_db)):
     costo_total = 0
     for fila in composicion:
         precio = db.query(PrecioDB).filter(PrecioDB.insumo_id == fila.insumo_id, PrecioDB.fecha_vigencia <= fecha).order_by(PrecioDB.fecha_vigencia.desc()).first()
+        if precio is None:
+            raise HTTPException(status_code=404, detail=f"No hay precio vigente para el insumo {fila.insumo_id} en la fecha {fecha}")
         costo_total = costo_total + (fila.cantidad * precio.precio)
     return {"concepto_id": id, "fecha": fecha, "costo_total": costo_total}
 
