@@ -2,8 +2,9 @@
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import engine, Base, SessionLocal, Tarea as TareaDB, Insumo as InsumoDB, Precio as PrecioDB, Concepto as ConceptoDB, Composicion as ComposicionDB
+from database import engine, Base, SessionLocal, Tarea as TareaDB, Insumo as InsumoDB, Precio as PrecioDB, Concepto as ConceptoDB, Composicion as ComposicionDB,  Usuario as UsuarioDB
 from datetime import date 
+from passlib.context import CryptContext
 
 
 
@@ -15,8 +16,11 @@ def get_db():
         db.close()
 
 
-            
+        
 app = FastAPI()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
 
 class Tarea(BaseModel):
     titulo: str
@@ -85,6 +89,17 @@ class ComposicionRespuesta(BaseModel):
     concepto_id: int
     insumo_id: int
     cantidad: float
+
+    class Config:
+        from_attributes = True
+
+class UsuarioCrear(BaseModel):
+    email: str
+    password: str
+
+class UsuarioRespuesta(BaseModel):
+    id: int
+    email: str
 
     class Config:
         from_attributes = True
@@ -238,3 +253,16 @@ def calcular_costo(id: int, fecha: date, db: Session = Depends(get_db)):
         costo_total = costo_total + (fila.cantidad * precio.precio)
     return {"concepto_id": id, "fecha": fecha, "costo_total": costo_total}
 
+@app.post("/registro", status_code=201, response_model=UsuarioRespuesta)
+def registrar_usuario(usuario: UsuarioCrear, db: Session = Depends(get_db)):
+    existe = db.query(UsuarioDB).filter(UsuarioDB.email == usuario.email).first()
+    if existe:
+        raise HTTPException(status_code=400, detail="El email ya está registrado")
+
+    hashed = pwd_context.hash(usuario.password)
+
+    nuevo = UsuarioDB(email=usuario.email, hashed_password=hashed)
+    db.add(nuevo)
+    db.commit()
+    db.refresh(nuevo)
+    return nuevo

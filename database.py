@@ -50,6 +50,12 @@ class Precio(Base):
     precio = Column(Float, nullable=False)
     fecha_vigencia = Column(Date,nullable=False)
 
+class Usuario(Base):
+    __tablename__ = "usuarios"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+
 
 
 Base.metadata.create_all(bind=engine)
