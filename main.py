@@ -104,6 +104,7 @@ class UsuarioRespuesta(BaseModel):
     class Config:
         from_attributes = True
 
+
 @app.get("/")
 def read_root():
     return{"mensaje": "API de Tareas - FastAPI + PostgreSQL"}
@@ -266,3 +267,18 @@ def registrar_usuario(usuario: UsuarioCrear, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(nuevo)
     return nuevo
+
+@app.post ("/login")
+def login_usuario(usuario: UsuarioCrear,db: Session = Depends(get_db)):
+    existe = db.query(UsuarioDB).filter(UsuarioDB.email == usuario.email).first()
+    if not existe:
+        raise HTTPException(status_code=401, detail= "Credenciales invalidas")
+
+    password_correcta= pwd_context.verify(usuario.password, existe.hashed_password)
+    if not password_correcta:
+        raise HTTPException(status_code=401, detail="Credenciales invalidas")
+
+
+
+    return{"mensaje": "Login exitoso"}
+
