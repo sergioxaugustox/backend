@@ -5,7 +5,9 @@ from sqlalchemy.orm import Session
 from database import engine, Base, SessionLocal, Tarea as TareaDB, Insumo as InsumoDB, Precio as PrecioDB, Concepto as ConceptoDB, Composicion as ComposicionDB,  Usuario as UsuarioDB
 from datetime import date 
 from passlib.context import CryptContext
-
+from jose import jwt
+from datetime import datetime, timedelta, timezone
+import os
 
 
 def get_db():
@@ -19,6 +21,18 @@ def get_db():
         
 app = FastAPI()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+def crear_token(data: dict):
+    to_encode = data.copy()
+    expira = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expira})
+    token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return token
+
 
 
 
@@ -280,5 +294,6 @@ def login_usuario(usuario: UsuarioCrear,db: Session = Depends(get_db)):
 
 
 
-    return{"mensaje": "Login exitoso"}
+    token = crear_token({"sub": existe.email})
+    return {"access_token": token, "token_type": "bearer"}
 
