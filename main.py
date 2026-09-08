@@ -8,6 +8,9 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta, timezone
 import os
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt, JWTError
+
 
 
 def get_db():
@@ -21,6 +24,7 @@ def get_db():
         
 app = FastAPI()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
@@ -32,6 +36,21 @@ def crear_token(data: dict):
     to_encode.update({"exp": expira})
     token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return token
+
+def get_usuario_actual(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Token inválido")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+    usuario = db.query(UsuarioDB).filter(UsuarioDB.email == email).first()
+    if usuario is None:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+    return usuario
 
 
 
@@ -164,7 +183,7 @@ def actualizar_tarea(id: int, tarea_nueva: Tarea, db: Session = Depends(get_db))
 
 
 @app.post("/insumos", status_code=201, response_model=InsumoRespuesta)
-def nuevo_insumo(insumo: Insumo, db: Session = Depends(get_db)):
+def nuevo_insumo(insumo: Insumo, db: Session = Depends(get_db), usuario = Depends(get_usuario_actual)):
     nueva = InsumoDB(nombre=insumo.nombre, unidad=insumo.unidad, tipo=insumo.tipo)
     db.add(nueva)
     db.commit()
@@ -176,7 +195,7 @@ def listar_insumos(db:Session = Depends (get_db)):
     return db.query (InsumoDB).all()
 
 @app.delete("/insumos/{id}")
-def borrar_insumo(id: int, db: Session = Depends (get_db)):
+def borrar_insumo(id: int, db: Session = Depends (get_db), usuario = Depends(get_usuario_actual)):
     insumo= db.query(InsumoDB).filter(InsumoDB.id == id).first()
     if insumo is None:
         raise HTTPException (status_code=404, detail= "Insumo no encontrado")   
@@ -187,7 +206,7 @@ def borrar_insumo(id: int, db: Session = Depends (get_db)):
 
 
 @app.put("/insumos/{id}", response_model=InsumoRespuesta)
-def actualizar_insumo(id: int, insumo_nuevo:  Insumo, db: Session = Depends (get_db)):
+def actualizar_insumo(id: int, insumo_nuevo:  Insumo, db: Session = Depends (get_db),usuario = Depends(get_usuario_actual)):
     insumo=db.query(InsumoDB).filter(InsumoDB.id == id).first()
     if insumo is None:
         raise HTTPException (status_code=404, detail= "Insumo no encontrado")  
@@ -199,7 +218,7 @@ def actualizar_insumo(id: int, insumo_nuevo:  Insumo, db: Session = Depends (get
     return insumo
 
 @app.post("/precios", status_code=201, response_model=PrecioRespuesta)
-def nuevo_precio(precio: Precio, db: Session = Depends(get_db)):
+def nuevo_precio(precio: Precio, db: Session = Depends(get_db), usuario = Depends(get_usuario_actual)):
     nueva= PrecioDB(insumo_id= precio.insumo_id, precio= precio.precio, fecha_vigencia= precio.fecha_vigencia)
     db.add(nueva)
     db.commit()
@@ -211,7 +230,7 @@ def listar_precios(db: Session = Depends(get_db)):
     return db.query(PrecioDB).all()
 
 @app.post("/conceptos", status_code=201, response_model=ConceptoRespuesta)
-def nuevo_concepto(concepto: Concepto, db: Session = Depends(get_db)):
+def nuevo_concepto(concepto: Concepto, db: Session = Depends(get_db), usuario = Depends(get_usuario_actual)):
     nueva= ConceptoDB(codigo= concepto.codigo, descripcion= concepto.descripcion, unidad = concepto.unidad)
     db.add(nueva)
     db.commit()
@@ -223,7 +242,7 @@ def listar_conceptos(db: Session = Depends(get_db)):
     return db.query(ConceptoDB).all()
 
 @app.put("/conceptos/{id}", response_model=ConceptoRespuesta)
-def actualizar_concepto(id: int, concepto_nuevo: Concepto, db: Session= Depends(get_db)):
+def actualizar_concepto(id: int, concepto_nuevo: Concepto, db: Session= Depends(get_db),usuario = Depends(get_usuario_actual)):
     concepto= db.query(ConceptoDB).filter(ConceptoDB.id == id).first()
     if concepto is None:
         raise HTTPException(status_code=404, detail="Concepto no encontrado")
@@ -235,7 +254,7 @@ def actualizar_concepto(id: int, concepto_nuevo: Concepto, db: Session= Depends(
     return concepto 
 
 @app.delete("/conceptos/{id}")
-def borrar_concepto(id: int, db: Session = Depends (get_db)):
+def borrar_concepto(id: int, db: Session = Depends (get_db), usuario = Depends(get_usuario_actual)):
     concepto= db.query(ConceptoDB).filter(ConceptoDB.id == id).first()
     if concepto is None:
         raise HTTPException (status_code=404, detail= "Concepto no encontrado")   
@@ -244,7 +263,7 @@ def borrar_concepto(id: int, db: Session = Depends (get_db)):
     return{"mensaje": "concepto borrado"}
 
 @app.post("/composicion", status_code=201, response_model=ComposicionRespuesta)
-def nuevo_composicion(composicion: Composicion, db: Session = Depends(get_db)):
+def nuevo_composicion(composicion: Composicion, db: Session = Depends(get_db), usuario = Depends(get_usuario_actual)):
     nueva= ComposicionDB(concepto_id= composicion.concepto_id, insumo_id= composicion.insumo_id, cantidad= composicion.cantidad)
     db.add(nueva)
     db.commit()
