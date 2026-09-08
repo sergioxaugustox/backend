@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 import os
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
-
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 
 def get_db():
@@ -302,12 +302,12 @@ def registrar_usuario(usuario: UsuarioCrear, db: Session = Depends(get_db)):
     return nuevo
 
 @app.post ("/login")
-def login_usuario(usuario: UsuarioCrear,db: Session = Depends(get_db)):
-    existe = db.query(UsuarioDB).filter(UsuarioDB.email == usuario.email).first()
+def login_usuario(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    existe = db.query(UsuarioDB).filter(UsuarioDB.email == form.username).first()
     if not existe:
         raise HTTPException(status_code=401, detail= "Credenciales invalidas")
 
-    password_correcta= pwd_context.verify(usuario.password, existe.hashed_password)
+    password_correcta= pwd_context.verify(form.password, existe.hashed_password)
     if not password_correcta:
         raise HTTPException(status_code=401, detail="Credenciales invalidas")
 
