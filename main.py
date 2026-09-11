@@ -11,6 +11,8 @@ import os
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 
 def get_db():
@@ -23,6 +25,13 @@ def get_db():
 
         
 app = FastAPI()
+
+@app.exception_handler(Exception)
+async def error_general(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Ocurrió un error interno. Intenta más tarde."}
+    )
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
