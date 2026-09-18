@@ -1,6 +1,19 @@
-# API de Tareas
+# API de Costos de Construcción (APU)
 
 API REST para cálculo de costos de construcción (APU) con precios históricos.
+
+**Demo en vivo:** https://backend-7p18.onrender.com/docs
+
+> La primera carga puede tardar ~1 minuto: es el arranque en frío del plan gratuito de Render.
+
+## SOURCE
+
+Datos que alimentan el sistema:
+
+- **Catálogo de insumos** — block, arena, cal (precios Cruz Azul 2024) con unidad y tipo.
+- **Precios históricos** — cada precio lleva su fecha de vigencia; permite costear "a fecha".
+- **Composiciones** — recetas que ligan cada concepto con sus insumos y cantidades.
+- **Usuarios** — registro/login para proteger la escritura con JWT.
 
 ## SYSTEM
 
@@ -55,6 +68,53 @@ Proyecto personal de portafolio. Diseñé el modelo de datos, construí todos lo
 | DELETE | `/tareas/{id}` | CRUD de práctica | Público |
 
 > 🔒 Requiere token Bearer en header `Authorization`.
+
+## Modelo de datos
+
+```mermaid
+erDiagram
+    CONCEPTOS ||--o{ COMPOSICION : "se compone de"
+    INSUMOS ||--o{ COMPOSICION : "aparece en"
+    INSUMOS ||--o{ PRECIOS : "tiene histórico"
+
+    CONCEPTOS {
+        int id PK
+        string codigo
+        string descripcion
+        string unidad
+    }
+    INSUMOS {
+        int id PK
+        string nombre
+        string unidad
+        string tipo
+    }
+    COMPOSICION {
+        int id PK
+        int concepto_id FK
+        int insumo_id FK
+        float cantidad
+    }
+    PRECIOS {
+        int id PK
+        int insumo_id FK
+        float precio
+        date fecha_vigencia
+    }
+    USUARIOS {
+        int id PK
+        string email UK
+        string hashed_password
+    }
+    TAREAS {
+        int id PK
+        string titulo
+        string descripcion
+        bool hecho
+    }
+```
+
+`composicion` es la tabla puente (receta): liga cada concepto con sus insumos y cantidades. `precios` guarda el histórico por insumo con `fecha_vigencia`. `tareas` es el CRUD de práctica de Fase 1, fuera del núcleo APU.
 
 ## Cómo correr localmente
 
