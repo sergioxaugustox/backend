@@ -175,7 +175,7 @@ def borrar_tarea(id: int, db: Session = Depends (get_db)):
     db.commit()
     return {"mensaje": "tarea borrada"}    
 
-@app.put("/tareas/{id}, response_model=TareaRespuesta")
+@app.put("/tareas/{id}", response_model=TareaRespuesta)
 def actualizar_tarea(id: int, tarea_nueva: Tarea, db: Session = Depends(get_db)):
     tarea = db.query(TareaDB).filter(TareaDB.id == id) .first()
     if tarea is None:
